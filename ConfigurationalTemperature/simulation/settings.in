@@ -1,0 +1,5 @@
+### Variables necessary for the Lennard-Jones fluid simulations
+variable temperature equal 1.7
+variable density equal 0.8
+variable random_seed equal 12345
+

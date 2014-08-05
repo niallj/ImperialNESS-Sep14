@@ -1,0 +1,62 @@
+### LAMMPS input script that creates a simple cubic lattice of Lennard-Jones particles
+### and equilibrates it at the requried temperature.
+### Niall Jackson <niall.jackson@gmail.com>
+
+### Brief descriptions of the purpose of each command are provided
+### For more information, see http://lammps.sandia.gov/doc/Section_commands.html#cmd_5
+
+#contains variables about the target system e.g. temperature, desnsity
+#and also sets up some common simulation properties that should be the
+#same across runs
+include settings.in
+
+# Generate a simple cubic lattice
+# The lattice spacing is determined by the required density
+lattice sc ${density}
+
+#create a geometric region with 15 lattice points on each side
+region sim_box block 0 15 0 15 0 15
+
+#create a simulation box which occupies the region sim_box, containing
+#1 atom type
+create_box 1 sim_box
+
+#place one atom of type 1 on every lattice site in the box
+create_atoms 1 box
+
+#set the atomic masses
+mass 1 1.0
+
+#use Lennard-Jones pair interactions without a cutoff of 3.0 sigma
+pair_style lj/cut/opt 3.0
+
+#set epsilon and sigma to 1.0
+pair_coeff 1 1 1.0 1.0
+
+#set the skin distance for neighbour-list generation to 2.0 sigma
+neighbor 2.0 bin
+
+#set the timestep
+timestep 0.0025
+
+#initialise all atomic velocities by drawing from a Gaussian distribution
+#at the required temperature. ensure that there is no net linear momentum.
+velocity all create ${temperature} ${random_seed} dist gaussian mom yes
+
+#apply a Nose-Hoover thermostat to the system to bring it to the required temperature
+##the Nose-Hoover damping time should typically be around 100 timesteps
+variable tdamp equal 50.0*dt
+fix nvt all nvt temp ${temperature} ${temperature} ${tdamp}
+
+#specify which thermodynamic quantities are output
+#we want only the number of the timestep, the temperature, and the total energy
+thermo_style custom step temp etotal
+
+#output thermodynamic information every 10 steps
+thermo 10
+
+#run the simulation for 1000 timesteps
+run 50000
+
+#store the current state of the system in a restart file
+write_restart equilibrated.restart
