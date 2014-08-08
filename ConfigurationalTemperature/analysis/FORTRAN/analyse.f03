@@ -36,11 +36,13 @@ real(c_double) :: tkin = 0.0
 
 !accumulators for averages over entire simulation
 real(c_double) :: tkin_ave = 0.0
-real(c_double) :: tconF_ave = 0.0
+real(c_double) :: tconF_numerator_ave = 0.0
+real(c_double) :: tconF_denominator_ave = 0.0
 real(c_double) :: tcon1_ave = 0.0
-real(c_double) :: tkin2_ave = 0.0
-real(c_double) :: tconF2_ave = 0.0
-real(c_double) :: tcon12_ave = 0.0
+real(c_double) :: tkinsq_ave = 0.0
+real(c_double) :: tconF_numerator_sq_ave = 0.0
+real(c_double) :: tconF_denominator_sq_ave = 0.0
+real(c_double) :: tcon1sq_ave = 0.0
 
 call get_command_argument(1, filename, filename_len)
 
@@ -64,17 +66,22 @@ else
                 ! real v(N,3) atomic velocities
                 ! real f(N,3) total force on each atom F_i
 
-                !remember that you need to calculate tkin, tcon1 and tconF
-                !you should use the write command below to output the 
-                !instantaneous value and also update the average
-                !for the final averages, you should also calculate an
-                !error, using Var(X) = <X**2> - <X>**2, and
-                !stderr = sqrt(Var(X)/N)
+                !remember that you need to calculate:
+                ! tkin = the standard "equipartition" temperature
+                ! tcon1, tconF, as defined in the booklet
+                ! we need instantaneous values (instantaneously, tcon1 = tconF)
+                ! and also averages over the whole simulation
+                ! for the final averages, you should also calculate an
+                ! error, using Var(X) = <X**2> - <X>**2, and
+                ! stderr = sqrt(Var(X)/N)
+ 
 
+                !write the current temperatures to the output file
                 write(output_file,*) timestep, tkin, tconF, tcon1
 
                 timesteps_read = timesteps_read + 1
         end do
         close(output_file)
+        print*, "Read", timesteps_read, "timesteps."
 end if
 end program analyse
