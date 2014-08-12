@@ -1,6 +1,6 @@
 .PHONY: all clean LibTrajReader
 
-FORT = gfortran -Wall -g
+FORT = gfortran -Wall -O3
 EXEC = analyse
 TRAJRDR_DIR = ../TrajReader/
 TRAJRDR_LIB = $(TRAJRDR_DIR)/TrajReader.a

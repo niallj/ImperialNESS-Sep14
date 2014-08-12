@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-CC = g++ -Wall -std=c++11 -g
+CC = g++ -Wall -std=c++11 -O3
 AR = ar rcs
 
 default: all
