@@ -3,7 +3,7 @@
 FORT = gfortran -Wall -O3
 EXEC = analyse
 TRAJRDR_DIR = ../TrajReader/
-TRAJRDR_LIB = $(TRAJRDR_DIR)/TrajReader.a
+TRAJRDR_LIB = $(TRAJRDR_DIR)/TrajReaderFORT.a
 
 all: analyse
 
