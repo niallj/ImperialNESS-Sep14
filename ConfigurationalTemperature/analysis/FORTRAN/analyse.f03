@@ -100,6 +100,8 @@ else
                 ! the existing code will take care of the averages and standard deviations
 
                 ! two loop counters have been predefined for you: i, j
+                ! you also have a predefined vector(3): del
+                ! and a variable to store squared lengths: rsq
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
