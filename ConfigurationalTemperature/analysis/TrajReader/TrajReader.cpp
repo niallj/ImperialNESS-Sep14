@@ -154,7 +154,7 @@ extern "C" {
 				v[0][running] = vx;
 				v[0][(*n)+running] = vy;
 				v[0][2*(*n)+running] = vz;
-				f[0][i*running] = fx;
+				f[0][running] = fx;
 				f[0][(*n)+running] = fy;
 				f[0][2*(*n)+running] = fz;
 				running++;
