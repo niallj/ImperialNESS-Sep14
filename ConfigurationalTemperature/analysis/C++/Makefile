@@ -1,6 +1,6 @@
 .PHONY: all clean LibTrajReader
 
-FORT = gcc -Wall -O3
+FORT = g++ -Wall -O3 -std=c++11
 EXEC = analyse
 TRAJRDR_DIR = ../TrajReader/
 TRAJRDR_LIB = $(TRAJRDR_DIR)/TrajReaderC.a
