@@ -92,7 +92,7 @@ extern "C" {
 		return true;
 	}
 
-	bool framebody(int *n, double **x, double **v, double **f) {
+	bool framebody(int *n, double *x, double *v, double *f) {
 		trajectory_file.read(ui.buf, sizeof(int));
 		if (trajectory_file.fail()) {
 			return false;
@@ -148,15 +148,15 @@ extern "C" {
 				double fy = buffer[j*num_fields+8].d;
 				double fz = buffer[j*num_fields+9].d;
 #ifdef TARGET_FORTRAN
-				x[0][running] = rx;
-				x[0][(*n)+running] = ry;
-				x[0][2*(*n)+running] = rz;
-				v[0][running] = vx;
-				v[0][(*n)+running] = vy;
-				v[0][2*(*n)+running] = vz;
-				f[0][running] = fx;
-				f[0][(*n)+running] = fy;
-				f[0][2*(*n)+running] = fz;
+				x[running] = rx;
+				x[(*n)+running] = ry;
+				x[2*(*n)+running] = rz;
+				v[running] = vx;
+				v[(*n)+running] = vy;
+				v[2*(*n)+running] = vz;
+				f[running] = fx;
+				f[(*n)+running] = fy;
+				f[2*(*n)+running] = fz;
 #elif TARGET_C
 #endif
 				running++;

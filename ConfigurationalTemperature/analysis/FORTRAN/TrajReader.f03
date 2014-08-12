@@ -5,7 +5,7 @@ interface
 logical(c_bool) function FrameBody(n, x, v, f) bind(c)
         use, intrinsic :: iso_c_binding
         implicit none
-        real(c_double), dimension(:,:), intent(out) :: x, v, f
+        real(c_double), dimension(*), intent(out) :: x, v, f
         integer(c_int) :: n
 end function FrameBody
 
