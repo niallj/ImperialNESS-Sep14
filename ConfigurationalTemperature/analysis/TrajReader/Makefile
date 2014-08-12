@@ -1,6 +1,6 @@
 .PHONY: clean all
 
-CC = g++ -Wall -std=c++11 -O3
+CC = g++ -Wall -std=c++0x -O3
 AR = ar rcs
 
 all: TrajReader.cpp
