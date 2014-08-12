@@ -147,7 +147,7 @@ extern "C" {
 				double fx = buffer[j*num_fields+7].d;
 				double fy = buffer[j*num_fields+8].d;
 				double fz = buffer[j*num_fields+9].d;
-
+#ifdef TARGET_FORTRAN
 				x[0][running] = rx;
 				x[0][(*n)+running] = ry;
 				x[0][2*(*n)+running] = rz;
@@ -157,6 +157,8 @@ extern "C" {
 				f[0][running] = fx;
 				f[0][(*n)+running] = fy;
 				f[0][2*(*n)+running] = fz;
+#elif TARGET_C
+#endif
 				running++;
 			}
 		}
