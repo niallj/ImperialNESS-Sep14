@@ -114,7 +114,7 @@ else
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-                tkin = tkin / N
+                tkin = mass * tkin / (3.0*N)
                 tkin_ave = tkin_ave + tkin
                 tkinsq_ave = tkinsq_ave + tkin*tkin
 
