@@ -147,6 +147,7 @@ extern "C" {
 				double fx = buffer[j*num_fields+7].d;
 				double fy = buffer[j*num_fields+8].d;
 				double fz = buffer[j*num_fields+9].d;
+				//C and FORTRAN handle arrays differently
 #ifdef TARGET_FORTRAN
 				x[running] = rx;
 				x[(*n)+running] = ry;
@@ -158,6 +159,15 @@ extern "C" {
 				f[(*n)+running] = fy;
 				f[2*(*n)+running] = fz;
 #elif TARGET_C
+				x[3*running] = rx;
+				x[3*running+1] = ry;
+				x[3*running+2] = rz;
+				v[3*running] = vx;
+				v[3*running+1] = vy;
+				v[3*running+2] = vz;
+				f[3*running] = fx;
+				f[3*running+1] = fy;
+				f[3*running+2] = fz;
 #endif
 				running++;
 			}
