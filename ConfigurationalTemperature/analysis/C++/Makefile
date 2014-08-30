@@ -1,6 +1,6 @@
 .PHONY: all clean LibTrajReader
 
-CC = g++ -Wall -std=c++0x -O3
+CC = icpc -Wall -std=c++0x -O3
 EXEC = analyse
 TRAJRDR_DIR = ../TrajReader/
 TRAJRDR_LIB = $(TRAJRDR_DIR)/TrajReaderC.a
