@@ -1,6 +1,6 @@
 .PHONY: all clean LibTrajReader
 
-FORT = gfortran -Wall -O3 -std=f2003
+FORT = ifort -warn all -O3
 EXEC = analyse
 TRAJRDR_DIR = ../TrajReader/
 TRAJRDR_LIB = $(TRAJRDR_DIR)/TrajReaderFORT.a
@@ -14,7 +14,7 @@ TrajReader.mod: TrajReader.f90 LibTrajReader
 	$(FORT) -c TrajReader.f90
 
 analyse: analyse.f90 TrajReader.f90 TrajReader.mod
-	$(FORT) -o $(EXEC) analyse.f90 TrajReader.f90 $(TRAJRDR_LIB) -lstdc++
+	$(FORT) -o $(EXEC) analyse.f90 TrajReader.f90 $(TRAJRDR_LIB) -cxxlib
 
 clean:
 	rm -fv *.mod *.o $(EXEC)
