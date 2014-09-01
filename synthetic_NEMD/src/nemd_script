@@ -1,0 +1,180 @@
+#!/usr/bin/perl -w 
+##############################################################
+####  Perl script  for running 2d sllod code 
+#############################################################
+####  Written by Karl Travis 31/08/2014         
+##############################################################
+
+##############################################################
+#### general user constants to change:
+##############################################################
+
+use Cwd;  #cpan module that grabs the current working directory
+
+@strain_rate_list = qw(0.01788 0.03 0.04 0.057 0.10 0.1778 0.3 0.5 1.0);  # set of shear rates to simulate   
+$prevdir = "eqlm";
+
+## note: If you want to add more strain rates to earlier set that have been run, 
+## change the values in the () above to the new strain rates and change the 
+## $prevdir from eqlm to the last shear rate you did, eg "shear_rate_1.0".
+## IMPORTANT! please make a copy of the perl_sllod_results.txt BEFORE beginning a new run as currently
+## any new run overwrites the old file! This is being fixed.....
+
+$num_eqlm =  100000;  #number of MD steps in equilibration phase
+
+$num_prodn = 100000;  # ditto but for production phase
+
+###################################################################
+    $dirname = "shear_rate_";
+
+    @data  = ();
+
+    $mydir = getcwd;
+    print "$mydir\n";
+
+#    $code_type = $ARGV[0]; 
+     $exec = "sllod_2d.exe";
+
+### this perl code is not complete so you need to run the nemd_script_3d version if you want to run 
+### the 3d code in sequential mode.
+#    $exec = "sllod_3d.exe";
+
+### create the file that will contain the results (T, density, energy, pressure etc)
+
+    $filey = "perl_sllod_results.txt";  #name of results file
+
+    open (OUTPUT, ">$filey") || die "cannot open $filey for writing\n";
+    printf OUTPUT "shear, error, temp, error, density, error, volume, error, press, error, Etot/N, error, PV/N, error,".
+                   "Pxx, error,Pyy, error,Pxy, error,therm_zeta,error\n";
+
+### gather the appropriate input.dat as the hash: %input_deck 
+
+    setup_namelist_hash();
+
+    print "$input_deck{SHEAR}\n";
+            
+    $olddirname = $prevdir;
+
+#######################################################
+###               Main Loop
+#######################################################
+
+foreach $n (@strain_rate_list){ #loop over list of strain rate values
+    $shear = $n;
+    $fulldirname = $dirname.$shear;
+    mkdir $fulldirname;
+    chdir $fulldirname;
+    $prevdir = $olddirname;
+    $olddirname = $fulldirname;
+    system("cp ../$prevdir/restart.txt .");
+    $input_deck{SHEAR} = $shear;
+    $input_deck{NTS} = $num_eqlm;
+    write_input_file();
+    system("../../bin/$exec ");
+    $input_deck{NTS} = $num_prodn;
+    write_input_file();
+    system("../../bin/$exec ");
+
+# call data grab
+
+    $ref = data_grab();
+    @myDATA = @{$ref};
+    $data[0] = $myDATA[0];
+    $error[0] = $myDATA[1];
+    $data[1] = $myDATA[2];
+    $error[1] = $myDATA[3];
+    $data[2] = $myDATA[4];
+    $error[2] = $myDATA[5];
+    $data[3] = $myDATA[6];
+    $error[3] = $myDATA[7];
+    $data[4] = $myDATA[8];
+    $error[4] = $myDATA[9];
+    $data[5] = $myDATA[10];
+    $error[5] = $myDATA[11];
+    $data[6] = $myDATA[12];
+    $error[6] = $myDATA[13];
+    $data[7] = $myDATA[14];
+    $error[7] = $myDATA[15];
+    $data[8] = $myDATA[16];
+    $error[8] = $myDATA[17];
+    $data[9] = $myDATA[18];
+    $error[9] = $myDATA[19];
+    $data[10] = $myDATA[20];
+    $error[10] = $myDATA[21];
+
+
+# write data out to file
+    printf OUTPUT "%19.8f, %19.8f, %19.8f, %19.8f, %19.8f, %19.8f, %19.8f, %19.8f, %19.8f,".
+                  "%19.8f, %19.8f, %19.8f, %19.8f, %19.8f, %19.8f, %19.8f, %19.8f, %19.8f,".
+                  "%19.8f, %19.8f, %19.8f, %19.8f\n",
+                   $data[0],$error[0],
+                   $data[1],$error[1],
+                   $data[2],$error[2],
+                   $data[3],$error[3],
+                   $data[4],$error[4],
+                   $data[5],$error[5],
+                   $data[6],$error[6],
+                   $data[7],$error[7],
+                   $data[8],$error[8],
+                   $data[9],$error[9],
+                   $data[10],$error[10];
+    chdir '..';
+    
+}  #### end of main time loop 
+
+
+
+    sub setup_namelist_hash{
+#### set up defaults for fortran90 namelist, stored as a hash
+#### this setup for the 2d sllod code 
+
+         %input_deck = (
+              "ISTART" => 1,
+              "N" => 225,
+              "LATTICE_TYPE" => 1,
+              "IPOT_TYPE" => 6,
+              "SS_POWER" => 6,
+              "ITHERM" => 1,
+              "TREQ" => 1.0,
+              "DENSITY" => 0.92380,
+              "SIGMA" => 1.0,
+              "EPS" => 1.0,
+              "RCUT"    => 1.50,
+              "DT" =>    0.0005,
+              "NTS" => 100000,
+              "ISUB" => 1000,
+              "MOVWRITE" => 50000,
+              "SHEAR" => 0.0,
+              );
+     return;
+    }
+
+    sub write_input_file{           #writes out a f90 style input file given a hash table
+    $fileout = "input.dat";
+    open (FILEOUT, ">$fileout") || die "cannot open $fileout for writing\n";
+      print FILEOUT "&input_deck\n";
+      while (($key, $value) = each(%input_deck)){
+      print FILEOUT $key." = ".$value." ";
+      }
+    print FILEOUT "\n/";
+    print FILEOUT "\n/";
+    close FILEOUT;
+    return;
+    }
+
+    sub data_grab{           # get properties and their standard errors from file 
+       my (@myarray, $cols);
+       @myarray = ();
+       open (FILEIN, "<Tabulated_results.txt") || die "cannot open Tabulated_results.txt for reading \n";
+       while (<FILEIN>){
+          chomp;
+          @cols = split /,/;
+          push(@myarray, @cols);
+       }
+      close FILEIN;
+      return \@myarray;
+      }
+
+
+
+

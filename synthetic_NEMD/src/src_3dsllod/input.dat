@@ -1,0 +1,32 @@
+&input_deck
+ISTART = 0        ! startup type: 0 = crystal, 1 = previous config
+N = 108          ! number of plate atoms along vertical direction
+IPOT_TYPE = 7     ! potential model (1 = LJ, 2 = SplineLJ,3 = MN family)
+ITHERM = 1        ! thermostat switch: 1 = 'on', 0 = 'off'
+TREQ   = 0.722    ! required temperature
+DENSITY = .8442   ! (plate density root(4/3)
+SIGMA = 1.00      ! potential parameter for ball particle
+EPS = 1.00        ! potential energy parameter for ball particle
+DT = 0.0010       ! time step in 4th order Runge Kutta scheme
+NTS = 100000      ! number of MD timesteps in this simulation
+ISUB = 5000       ! write to file interval
+MOVWRITE = 10000  ! will write a snapshot file to animate.txt every Movwrite steps
+SHEAR = 0.0       ! shear rate
+/
+
+!Notes: Do not remove the line &input_deck nor the trailing /
+!       Format of file is KEYWORD = value
+!       Key-value pairs can appear in any order in the list
+!       Avoid using 'D' which is normally used for denoting double precision
+!       since this is causing an issue with the perl script that will be sorted at a later date.
+
+! using ISTART = 0 will begin a simulation from an fcc lattice
+! using ISTART = 1 will restart the simulation from a previous configuration - you MUST have the file
+!                  restart.txt in your directory for this to work. copy it from another recent run.
+
+!ISUB controls the frequency by which block averaged data is stored. An ISUB of 5000, say, would
+!write a block average to file every 5000 timesteps. You need at least 100 of these to get a 
+!non-zero standard error in results.txt. In this example, NTS would have to be 500,000. or if
+!NTS was 100,000, ISUB would need to be 1000.
+
+ 
