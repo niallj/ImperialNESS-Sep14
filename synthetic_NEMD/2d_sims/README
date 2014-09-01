@@ -1,0 +1,5 @@
+This file contains extra information about running on the Imperial cluster.
+
+You have been provided with an a job script for the equilibration process:  eqlm/equilibrate.sh 
+
+You can copy this to your own directories and use it to run your own simulations as necessary.
