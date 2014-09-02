@@ -1,0 +1,127 @@
+## We will use the skeleton of this LAMMPS input script as the starting point
+#to perform a boundary driven non-equilibrium simulation of which investigates
+#the Soret effect for a binary, purely repuslive system where there is a size difference
+#between the two species by a factor of three.
+units lj 
+dimension 3
+boundary p p p
+atom_style atomic
+
+read_data data.soret
+
+#We cut off a standard Lennard-Jones potential at its minima
+pair_style      lj/cut 1.39717341
+pair_coeff      1 1 1.0 1.24474 1.39717341
+pair_coeff      1 2 1.0 0.82982665 0.931448921
+pair_coeff      2 2 1.0 0.4149133 0.465724433
+
+#Set the skin length and neighbour list update options
+neighbor        0.3 bin
+neigh_modify    every 1 delay 1 check yes
+
+#Apply the NVT thermostat
+fix NVT all nvt temp 1.0 1.0 0.2
+
+#Set time-step in Lennard-Jones units
+timestep       0.002
+
+
+#Print thermodynamics data every 10 steps
+thermo 10
+
+#Box dimensions set so later deformation of the box
+#We want the density to be 1 particle per sigma_e cubed
+#variable lx equal <------
+#variable ly equal <------
+#variable lz equal <------
+
+#Delta z (half the size of each thermostat)
+variable dz equal 1.5
+
+
+#Temperature of the hot and cold regions in L-J units
+#Create variables for the desired temperature of the two
+#thermostated regions
+# Set the upper temperature to 1.2 epsilon/kB and lower to 0.8 epsilon/kB
+#<-----------------thi
+#<-----------------tlo
+
+
+#We deform the box over the course of 1000 steps to reach the desired density
+#using the fix deform command
+#<------- 
+
+run 1000
+
+#remove the deform fix
+#<-------
+
+#Mini equilibriation
+run 5000
+
+#remove NVT thermostat
+unfix NVT
+
+#Apply micro-canonical algorithm
+fix NVE all nve
+
+
+#   <dz>      <2dz>      <dz>
+#   _______________________
+#   |H|       | C |      |H|
+#   | |       | O |      | |
+#   |O|       | L |      |O|
+#   | |       | D |      | |
+#   |T|       |   |      |T|
+#   -----------------------
+#   <-------- lz --------->
+
+#We must now define the regions for both the hot and cold thermostats
+#do this with the region command. It will be easiest to define 3 cuboidal regions
+#as shown in the figure above and the use the union command to join the two hot regions
+#<------------------
+
+#Use the compute temp/region command to calculate the temperature in the hot
+#and cold region
+#<-----------------
+#set up a basic velocity rescale for the hot region using the
+#fix temp/rescale command
+#<-----------------
+#change the thermostat to only act on the "hot region" using the
+#fix_modify temp command
+#<-----------------
+#Now do the same for the cold region
+#<-----------------
+### MOMENTUM CONSERVATION
+
+#Use the fix momentum command to reset the linear momentum of the system to zero
+#<--------------
+
+#Set thermodynamic output to time-step,temperature,potential energy,pressure, KE energy change in cold region, KE energy change in hot region.
+#Add the two variables associate to the rescaling of the thermostats so that you may monitor the energy added/removed from the thermostats
+#thermo_style custom step temp pe etotal press <HERE> <HERE> <------------------------------
+
+# Equilibrate to steady state
+run 500000
+
+#Define groups for each species type so we may sample their densities
+group s1 type 1
+group s2 type 2
+
+reset_timestep 0
+
+#It is good practice to write a restart file every so often so that if something unexpected goes wrong we
+#don't have to start from the start of the simulation
+restart 1000000 stat
+
+#Define the bin size which we wish to sample density and temperature on along the z-axis
+        variable BINWIDTH equal 2.0
+
+        compute KE all ke/atom
+        variable TEMPS atom 2.0*c_KE/3.0
+        fix TPROFILE all ave/spatial 10 50000 500000 z lower ${BINWIDTH} v_TEMPS file temp.dat units box
+
+        fix RHOA s1 ave/spatial 10 50000 500000 z lower ${BINWIDTH} density/number file den1.dat units box
+        fix RHOB s2 ave/spatial 10 50000 500000 z lower ${BINWIDTH} density/number file den2.dat units box
+
+run 500000
