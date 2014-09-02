@@ -1,4 +1,4 @@
-#PBS -q pqchem
+#PBS -q tng
 #PBS -N Equilibration
 #PBS -l walltime=01:00:00
 #PBS -l select=1:ncpus=8
