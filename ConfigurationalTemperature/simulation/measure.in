@@ -29,7 +29,7 @@ thermo_style custom step temp etotal
 thermo 100
 
 #record the trajectory
-dump traj all custom 100 out.lammpstrj id x y z vx vy vz fx fy fz
+dump traj all custom 100 out.lammpstrj.bin id x y z vx vy vz fx fy fz
 
 #run the simulation for 100000 timesteps
 run 100000
