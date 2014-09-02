@@ -52,11 +52,7 @@
         CALL READ_CONFIG  ! start from a previous configuration 
       END IF
 
-      IF(ITHERM == 0) THEN
-        DEGFREE = 3.0D0*N - 3.0d0
-      ELSE
-        DEGFREE = 3.0D0*N - 4.0d0
-      END IF
+      DEGFREE = 3.0D0*N - 3.0d0  !NH thermostat adds a DoF! 
  
       OPEN(4,FILE = 'initial_config.txt')
       DO I = 1, N
