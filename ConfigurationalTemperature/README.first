@@ -1,0 +1,4 @@
+Please load the intel compiler before building the software:
+
+module load intel-suite/2013sp1
+
