@@ -145,8 +145,10 @@ int main(int argc, char** argv) {
 	double tconF_denominator = tconF_denominator_ave.mean();
 	double tconF_denominator_err = tconF_denominator_ave.stderr();
 	double tconF = tconF_denominator / tconF_numerator;
-	double tconF_err = tconF*tconF*(tconF_numerator_err*tconF_numerator_err
-			+ tconF_denominator_err*tconF_denominator_err);
+	double tconF_err =
+		tconF*tconF*(tconF_numerator_err*tconF_numerator_err/tconF_numerator/tconF_numerator
+			+
+			tconF_denominator_err*tconF_denominator_err/tconF_denominator/tconF_denominator);
 	std::cout << "TconF" << tconF << "+-" << tconF_err;
 
 	return 0;
