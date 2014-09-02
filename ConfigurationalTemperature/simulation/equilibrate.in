@@ -28,7 +28,7 @@ create_atoms 1 box
 mass 1 1.0
 
 #use Lennard-Jones pair interactions with a cutoff of 3.0 sigma
-pair_style lj/cut/opt 3.0
+pair_style lj/cut 3.0
 
 #set epsilon and sigma to 1.0
 pair_coeff 1 1 1.0 1.0

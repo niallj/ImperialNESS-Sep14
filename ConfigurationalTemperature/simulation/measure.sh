@@ -3,7 +3,7 @@
 #PBS -l walltime=01:00:00
 #PBS -l select=1:ncpus=8
 
-module load intel-suite lammps/4Feb14 mpi
+module load intel-suite lammps mpi
 
 cp $PBS_O_WORKDIR/measure.in $TMPDIR
 cp $PBS_O_WORKDIR/settings.in $TMPDIR
