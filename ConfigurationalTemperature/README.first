@@ -2,3 +2,4 @@ Please load the intel compiler before building the software:
 
 module load intel-suite/2013sp1
 
+When you run the simulations, you should make ONE COPY OF THE simulations/ DIRECTORY FOR EACH STATE POINT AT WHICH YOU INTEND TO RUN. This will make organising the files much easier!
