@@ -1,0 +1,312 @@
+## 1 variables ##
+# echo            none
+variable        runindx       equal   3
+
+# General dynamics parameters
+variable        temperature   equal   0.722
+
+variable        timestep      equal   0.001
+variable        numsteps      index   500000
+
+
+# Lennard Jones cutoff radius and Verlet skin length
+variable        vdwcut        equal   2^(1/6)
+variable        vdwskin       equal   0.3
+
+
+# Poiseuille flow parameters
+variable        poise_fext    equal   0.20
+variable        spring_keq    equal   150.15
+
+
+# Profile and sample parameters
+variable        dumpfreq      equal   "v_numsteps / 100"
+variable        thermofreq    equal   "v_numsteps / 100"
+
+variable        nfreq         equal   "v_numsteps / 100"
+variable        nevery        equal   1
+variable        nrepeat       equal   "v_nfreq / v_nevery"
+variable        numbins       equal   200
+
+variable        tempbins      equal   12
+
+
+# Minimization parameters (no need to touch these)
+variable        etol          equal   0.0
+variable        ftol          equal   1.0e-8
+variable        maxiter       equal   10000
+variable        maxeval       equal   10000
+variable        rngseed       equal   4928459
+
+
+
+
+## 2 force parameters ##
+units           lj
+dimension       3
+boundary        p p p
+
+atom_style      full
+pair_style      lj/cut ${vdwcut}
+pair_modify     shift yes mix arithmetic
+
+# read_data       0.inp.data
+read_restart    1.out.restart
+reset_timestep  0
+
+
+# WCA parameters for fluid and walls
+# Fluid-Fluid
+variable       epsFF    equal 1.0
+variable       sigFF    equal 1.0
+variable       cutFF    equal ${sigFF}*${vdwcut}
+
+# Fluid-Wall
+variable       epsFW    equal 1.0
+variable       sigFW    equal 1.0
+variable       cutFW    equal ${sigFW}*${vdwcut}
+
+# Wall-Wall
+variable       epsWW    equal 1.0
+variable       sigWW    equal 1.0
+variable       cutWW    equal ${sigWW}*${vdwcut}
+
+pair_coeff     1 1 ${epsFF} ${sigFF} ${cutFF}
+pair_coeff     1 2 ${epsFW} ${sigFW} ${cutFW}
+pair_coeff     2 2 ${epsWW} ${sigWW} ${cutWW}
+
+neighbor       ${vdwskin} bin
+#neigh_modify    every 1 delay 0 check yes one 10000 page 200000
+
+
+
+
+## 3 dynamics parameters ##
+
+# Create grups
+group       FLUID   type    1
+group       WALL    type    2
+
+
+# Initialize velocities and zero initial centre of mass momentum
+velocity    FLUID   create  ${temperature} ${rngseed} dist gaussian mom yes loop local
+velocity    WALL    create  ${temperature} ${rngseed} dist gaussian mom yes loop local
+# velocity    FLUID   set  0.0  0.0  0.0  units box
+# velocity    WALL    set  0.0  0.0  0.0  units box
+
+
+# Compute box and slab dimensions
+variable    Vol         equal   "lx * ly * lz"
+variable    dY          equal   "ly / v_numbins"
+variable    dVol        equal   "lx * v_dY * lz"
+
+
+# Compute atomic velocities, momenta, positions, velocities
+compute     atmV        all     property/atom vx vy vz
+compute     atmKE       all     ke/atom
+compute     atmPE       all     pe/atom
+compute     atmSV       all     stress/atom
+compute     atmFR       all     stress/atom virial
+
+compute     Rcom        all     com
+variable    atmPx       atom    "mass * vx"
+variable    atmPy       atom    "mass * vy"
+variable    atmPz       atom    "mass * vz"
+compute     Pcom        all     reduce sum v_atmPx v_atmPy v_atmPz
+
+
+
+# Compute temperature vector
+compute     atmTx       all     temp/partial 1 0 0
+compute     atmTy       all     temp/partial 0 1 0
+compute     atmTz       all     temp/partial 0 0 1
+compute     atmTc       all     temp/com
+
+compute     fluidTx     FLUID   temp/partial 1 0 0
+compute     fluidTy     FLUID   temp/partial 0 1 0
+compute     fluidTz     FLUID   temp/partial 0 0 1
+compute     fluidTc     FLUID   temp/com
+
+compute     profTx      FLUID   temp/profile 1 0 0 y ${tempbins} out bin
+compute     profTy      FLUID   temp/profile 0 1 0 y ${tempbins} out bin
+compute     profTz      FLUID   temp/profile 0 0 1 y ${tempbins} out bin
+compute     profTc      FLUID   temp/profile 1 1 1 y ${tempbins} out bin
+compute_modify profTx dynamic yes
+compute_modify profTy dynamic yes
+compute_modify profTz dynamic yes
+compute_modify profTc dynamic yes
+
+compute     wallTx      WALL    temp/partial 1 0 0
+compute     wallTy      WALL    temp/partial 0 1 0
+compute     wallTz      WALL    temp/partial 0 0 1
+compute     wallTc      WALL    temp/com
+
+
+# Compute pressure tensor
+variable    atmPxx      atom    "-(c_atmSV[1]) / v_dVol"
+variable    atmPyy      atom    "-(c_atmSV[2]) / v_dVol"
+variable    atmPzz      atom    "-(c_atmSV[3]) / v_dVol"
+variable    atmPxy      atom    "-(c_atmSV[4]) / v_dVol"
+variable    atmPxz      atom    "-(c_atmSV[5]) / v_dVol"
+variable    atmPyz      atom    "-(c_atmSV[6]) / v_dVol"
+
+
+# Compute atomic heat flux tensor
+variable    J_K         atom    "c_atmKE * c_atmV"
+variable    J_Kx        atom    "c_atmKE * c_atmV[1] / v_dVol"
+variable    J_Ky        atom    "c_atmKE * c_atmV[2] / v_dVol"
+variable    J_Kz        atom    "c_atmKE * c_atmV[3] / v_dVol"
+
+variable    J_U         atom    "0.5 * c_atmPE * c_atmV"
+variable    J_Ux        atom    "0.5 * c_atmPE * c_atmV[1] / v_dVol"
+variable    J_Uy        atom    "0.5 * c_atmPE * c_atmV[2] / v_dVol"
+variable    J_Uz        atom    "0.5 * c_atmPE * c_atmV[3] / v_dVol"
+
+variable    J_Cx        atom    "-(c_atmFR[1] * c_atmV[1] + c_atmFR[4] * c_atmV[2] + c_atmFR[5] * c_atmV[3]) / v_dVol"
+variable    J_Cy        atom    "-(c_atmFR[4] * c_atmV[1] + c_atmFR[2] * c_atmV[2] + c_atmFR[6] * c_atmV[3]) / v_dVol"
+variable    J_Cz        atom    "-(c_atmFR[5] * c_atmV[1] + c_atmFR[6] * c_atmV[2] + c_atmFR[3] * c_atmV[3]) / v_dVol"
+
+variable    J_Qx        atom    "(v_J_Kx + v_J_Ux + v_J_Cx)"
+variable    J_Qy        atom    "(v_J_Ky + v_J_Uy + v_J_Cy)"
+variable    J_Qz        atom    "(v_J_Kz + v_J_Uz + v_J_Cz)"
+
+
+# Compute thermo properties
+compute     sumKE       all     reduce sum c_atmKE
+compute     sumPE       all     reduce sum c_atmPE
+compute     sumSV       all     reduce sum c_atmSV[1] &
+                                           c_atmSV[2] &
+                                           c_atmSV[3] &
+                                           c_atmSV[4] &
+                                           c_atmSV[5] &
+                                           c_atmSV[6]
+variable    sumPxx      equal   "-c_sumSV[1] / v_Vol"
+variable    sumPyy      equal   "-c_sumSV[2] / v_Vol"
+variable    sumPzz      equal   "-c_sumSV[3] / v_Vol"
+variable    sumPxy      equal   "-c_sumSV[4] / v_Vol"
+variable    sumPxz      equal   "-c_sumSV[5] / v_Vol"
+variable    sumPyz      equal   "-c_sumSV[6] / v_Vol"
+variable    sumPtr      equal   "-(c_sumSV[1] + c_sumSV[2] + c_sumSV[3]) / (3*v_Vol)"
+
+
+# Fix simulation dynamics
+# tether wall atoms
+fix         SPRING      WALL    spring/self ${spring_keq}
+
+
+# add poiseuille force
+region      CELL        block   EDGE EDGE EDGE EDGE EDGE EDGE units box
+fix         POISE       FLUID   addforce ${poise_fext} 0.0 0.0 region CELL
+
+
+# add thermostat WALL
+# fix         FLUID_DYN   FLUID   nve
+# fix         WALL_DYN    WALL    nvt     temp ${temperature} ${temperature} 0.5
+# fix_modify  WALL_DYN    temp    wallTc
+
+
+# add thermostat FLUID+WALL
+fix         FLUID_DYN   FLUID   nvt     temp ${temperature} ${temperature} 0.5
+fix_modify  FLUID_DYN   temp    profTc
+fix         WALL_DYN    WALL    nvt     temp ${temperature} ${temperature} 0.5
+fix_modify  WALL_DYN    temp    wallTc
+
+
+
+
+## 4 sample parameters ##
+
+# output time averages and dump atoms
+thermo_style    custom step c_sumKE c_sumPE v_sumPtr vol    &
+                            c_Rcom[1] c_Rcom[2] c_Rcom[3]   &
+                            c_Pcom[1] c_Pcom[2] c_Pcom[3]
+thermo          ${thermofreq}
+thermo_modify   format float %+11.3g
+
+
+fix     SMP     all ave/time ${nfreq} 1 ${nfreq}                &
+                c_sumKE c_sumPE                                 &
+                c_atmTx   c_atmTy   c_atmTz   c_atmTc           &
+                c_fluidTx c_fluidTy c_fluidTz c_fluidTc         &
+                c_wallTx  c_wallTy  c_wallTz  c_wallTc          &
+                v_sumPxx  v_sumPyy  v_sumPzz  v_sumPtr          &
+                v_sumPxy  v_sumPxz  v_sumPyz                    &
+                c_Rcom[1] c_Rcom[2] c_Rcom[3]                   &
+                c_Pcom[1] c_Pcom[2] c_Pcom[3]                   &
+                ave window 1 file ${runindx}.out.sample
+
+
+fix     AVG     all ave/time ${nevery} ${nrepeat} ${nfreq}      &
+                c_sumKE   c_sumPE                               &
+                c_atmTx   c_atmTy   c_atmTz   c_atmTc           &
+                c_fluidTx c_fluidTy c_fluidTz c_fluidTc         &
+                c_wallTx  c_wallTy  c_wallTz  c_wallTc          &
+                v_sumPxx  v_sumPyy  v_sumPzz  v_sumPtr          &
+                v_sumPxy  v_sumPxz  v_sumPyz                    &
+                c_Rcom[1] c_Rcom[2] c_Rcom[3]                   &
+                c_Pcom[1] c_Pcom[2] c_Pcom[3]                   &
+                ave window 1 file ${runindx}.out.average
+
+
+fix     TEMP_PROF   FLUID   ave/time ${nevery} ${nrepeat} ${nfreq}      &
+                            c_profTx c_profTy c_profTz c_profTc         &
+                            mode vector ave running overwrite file ${runindx}.out.prof_temp
+
+
+fix     ATM_PROF    all     ave/spatial ${nevery} ${nrepeat} ${nfreq}       &
+                            y center ${dY}                                  &
+                            density/mass vx vy vz c_atmKE c_atmPE           &
+                            v_atmPxx v_atmPyy v_atmPzz                      &
+                            v_atmPxy v_atmPxz v_atmPyz                      &
+                            v_J_Kx v_J_Ky v_J_Kz v_J_Ux v_J_Uy v_J_Uz       &
+                            v_J_Cx v_J_Cy v_J_Cz v_J_Qx v_J_Qy v_J_Qz       &
+                            units box ave running overwrite file ${runindx}.out.prof_atm
+
+
+fix     FLUID_PROF  FLUID   ave/spatial ${nevery} ${nrepeat} ${nfreq}       &
+                            y center ${dY}                                  &
+                            density/mass vx vy vz c_atmKE c_atmPE           &
+                            v_atmPxx v_atmPyy v_atmPzz                      &
+                            v_atmPxy v_atmPxz v_atmPyz                      &
+                            v_J_Kx v_J_Ky v_J_Kz v_J_Ux v_J_Uy v_J_Uz       &
+                            v_J_Cx v_J_Cy v_J_Cz v_J_Qx v_J_Qy v_J_Qz       &
+                            units box ave running overwrite file ${runindx}.out.prof_fluid
+
+
+fix     WALL_PROF   WALL    ave/spatial ${nevery} ${nrepeat} ${nfreq}       &
+                            y center ${dY}                                  &
+                            density/mass vx vy vz c_atmKE c_atmPE           &
+                            v_atmPxx v_atmPyy v_atmPzz                      &
+                            v_atmPxy v_atmPxz v_atmPyz                      &
+                            v_J_Kx v_J_Ky v_J_Kz v_J_Ux v_J_Uy v_J_Uz       &
+                            v_J_Cx v_J_Cy v_J_Cz v_J_Qx v_J_Qy v_J_Qz       &
+                            units box ave running overwrite file ${runindx}.out.prof_wall
+
+
+dump    DUMPTRJ     all     custom ${dumpfreq} ${runindx}.out.dump    &
+                            id type mass x y z vx vy vz
+dump_modify     DUMPTRJ  sort id  format "%12d %12d %+.6e %+.6e %+.6e %+.6e %+.6e %+.6e %+.6e"
+
+
+dump    DUMPXYZ     all     xyz ${dumpfreq} ${runindx}.out.xyz
+dump_modify     DUMPXYZ  sort id element N C
+
+
+
+
+## 5 run dynamics ##
+timestep        ${timestep}
+
+# minimize        ${etol} ${ftol} ${maxiter} ${maxeval}
+# fix             MIN_PCON    all momentum  1 linear 1 1 1
+# fix             MIN_LIMIT   all nve/limit 0.01
+# fix             MIN_RESCALE all temp/rescale 10 ${temperature} ${temperature} 0.1 1.0
+# run             ${maxiter}
+# unfix           MIN_LIMIT
+# unfix           MIN_RESCALE
+# fix             MIN_NVT     all nvt temp ${temperature} ${temperature} 0.5
+
+# run
+log             ${runindx}.out.thermo
+run             ${numsteps}
+write_restart   ${runindx}.out.restart
