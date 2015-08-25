@@ -5,10 +5,10 @@
 ### Brief descriptions of the purpose of each command are provided
 ### For more information, see http://lammps.sandia.gov/doc/Section_commands.html#cmd_5
 
-#contains variables about the target system e.g. temperature, desnsity
-#and also sets up some common simulation properties that should be the
-#same across runs
-include settings.in
+### Variables necessary for the Lennard-Jones fluid simulations
+variable temperature equal 1.7
+variable density equal 0.2
+variable random_seed equal 12345
 
 # Generate a simple cubic lattice
 # The lattice spacing is determined by the required density
@@ -28,7 +28,7 @@ create_atoms 1 box
 mass 1 1.0
 
 #use Lennard-Jones pair interactions with a cutoff of 3.0 sigma
-pair_style lj/cut 3.0
+pair_style lj/cut 3.2
 
 #set epsilon and sigma to 1.0
 pair_coeff 1 1 1.0 1.0
@@ -45,7 +45,7 @@ velocity all create ${temperature} ${random_seed} dist gaussian mom yes
 
 #apply a Nose-Hoover thermostat to the system to bring it to the required temperature
 ##the Nose-Hoover damping time should typically be around 100 timesteps
-variable tdamp equal 50.0*dt
+variable tdamp equal 100.0*dt
 fix nvt all nvt temp ${temperature} ${temperature} ${tdamp}
 
 #specify which thermodynamic quantities are output
@@ -58,5 +58,21 @@ thermo 10
 #run the simulation for 1000 timesteps
 run 50000
 
-#store the current state of the system in a restart file
-write_restart equilibrated.restart
+#turn off Nose-Hoover integration
+unfix nvt
+
+#run in the NVE ensemble
+fix nve all nve
+
+#specify which thermodynamic quantities are output
+#we want only the number of the timestep, the temperature, and the total energy
+thermo_style custom step temp etotal
+
+#output thermodynamic information every 100 steps
+thermo 100
+
+#record the trajectory
+dump traj all custom 100 out.lammpstrj.bin id x y z vx vy vz fx fy fz
+
+#run the simulation for 100000 timesteps
+run 100000
